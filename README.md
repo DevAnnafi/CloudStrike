@@ -48,7 +48,7 @@ CloudStrike consolidates reconnaissance, misconfiguration scanning, and privileg
 🔧 **Tech Stack**
 -----------------
 
--   **Python 3.11+**
+-   **Python 3.14+**
 
 -   `boto3` (AWS)
 
