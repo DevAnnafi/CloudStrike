@@ -1,85 +1,238 @@
-# CloudStrike -- Cloud Pentesting Framework
+🛡️ **CloudStrike -- Multi‑Cloud Pentesting Framework**
+======================================================
 
-CloudStrike is a multi-cloud pentesting toolkit designed to identify misconfigurations in AWS, Azure, and GCP environments.  
+CloudStrike is an offensive security toolkit designed for **red teams, penetration testers, and cloud security engineers**.\
+It automates the enumeration and detection of **high‑impact misconfigurations** across AWS, Azure, and GCP environments --- the exact weaknesses adversaries target during real breaches.
 
-It focuses on real-world attack vectors used by red teams and cloud security engineers.
+CloudStrike consolidates reconnaissance, misconfiguration scanning, and privilege escalation detection into one streamlined framework.
 
----
+> ⚠️ **Legal Notice:** CloudStrike is for authorized testing only.\
+> Using this tool on environments you do not own or have explicit permission to test is illegal.
 
-## 🔥 Features
+* * * * *
 
-### 🟦 AWS
+🚀 **Features**
+---------------
 
-- Public S3 bucket detection  
+### 🟦 **Amazon Web Services (AWS)**
 
-- IAM privilege escalation detection  
+| Module | Description |
+| --- | --- |
+| **S3 Public Access Scanner** | Detects buckets exposed to `AllUsers` and `AuthenticatedUsers`. |
+| **IAM Privilege Escalation Detector** | Flags dangerous permissions like `iam:PassRole`, `sts:AssumeRole`, and keys that enable escalation. |
+| **EC2 Metadata Exposure** | Checks if IMDSv1 or IMDSv2 is configured properly and enumerates exposed metadata. |
+| **Resource Enumeration** | Lists users, roles, EC2 instances, security misconfigurations. |
 
-- EC2 metadata exposure  
+* * * * *
 
-- EC2 & IAM enumeration (expandable)
+### 🟪 **Microsoft Azure**
 
-### 🟪 Azure
+| Module | Description |
+| --- | --- |
+| **Blob Storage Exposure** | Detects public containers and misconfigured access levels. |
+| **Role & IAM Analyzer** | Identifies over‑permissioned identities and attack paths. |
+| **Azure Metadata Probe** | Checks access to Azure's metadata endpoint for misconfigurations. |
 
-- Public blob container detection  
+* * * * *
 
-- Role assignments / privilege analysis  
+### 🟥 **Google Cloud Platform (GCP)**
 
-- Metadata exposure checks
+| Module | Description |
+| --- | --- |
+| **Public Bucket Detection** | Flags buckets accessible to `allUsers` or `allAuthenticatedUsers`. |
+| **GCP IAM Escalation Detection** | Identifies unsafe roles and privilege escalation vectors. |
+| **GCP Metadata Scanning** | Probes instance metadata for token leakage and insecure exposure. |
 
-### 🟥 GCP
+* * * * *
 
-- Public bucket audit  
+🔧 **Tech Stack**
+-----------------
 
-- Service account privilege enumeration  
+-   **Python 3.11+**
 
-- Metadata server probing
+-   `boto3` (AWS)
 
----
+-   `google-cloud-storage` (GCP)
 
-## 📦 Installation
+-   `azure-identity` & `azure-mgmt-resource` (Azure)
 
-git clone https://github.com/yourname/cloudstrike
+-   `rich` for CLI styling
 
-cd cloudstrike
+-   `PyYAML` for config loading
 
-pip install -r requirements.txt
+-   `requests` for metadata probing
 
-yaml
+* * * * *
 
-Copy code
+📁 **Project Structure**
+------------------------
 
----
+```
+cloudstrike/
+│
+├── cloudstrike/
+│   ├── cli.py
+│   ├── core/
+│   │   ├── logger.py
+│   │   ├── report.py
+│   │   ├── utils.py
+│   │   └── enums.py
+│   │
+│   ├── aws/
+│   │   ├── s3_checker.py
+│   │   ├── iam_enum.py
+│   │   ├── metadata.py
+│   │   └── ec2_enum.py
+│   │
+│   ├── azure/
+│   ├── gcp/
+│   └── config/
+│
+├── requirements.txt
+├── README.md
+├── LICENSE
+└── .github/workflows/ci.yml`
+```
+* * * * *
 
-## 🚀 Usage
+🖥️ **Installation**
+--------------------
 
-python -m cloudstrike --aws-s3 --aws-iam --aws-meta
+`git clone https://github.com/<yourname>/CloudStrike.git
+cd CloudStrike
+pip install -r requirements.txt`
 
-yaml
+* * * * *
 
-Copy code
+🕹️ **Usage**
+-------------
 
----
+CloudStrike uses a modular CLI:
 
-## 🧪 CI/CD (GitHub Actions)
+### **AWS**
 
-- Runs linting  
+`python -m cloudstrike --aws-s3 --aws-iam --aws-meta`
 
-- Runs static checks  
+### **Azure**
 
-- Runs test suite  
+`python -m cloudstrike --azure-storage --azure-iam --azure-meta`
 
-- Ensures pull requests meet quality bars
+### **GCP**
 
----
+`python -m cloudstrike --gcp-buckets --gcp-iam --gcp-meta`
 
-## ⚠️ Legal Notice
+* * * * *
 
-CloudStrike is intended for use in authorized environments only.  
+📊 **Reporting**
+----------------
 
-Do not use it on systems you do not own.
+CloudStrike automatically generates detailed JSON reports:
 
----
+`cloudstrike_report.json`
 
-## 📄 License
+Each module contributes:
 
-MIT
+-   Misconfiguration description
+
+-   Severity level
+
+-   Evidence
+
+-   Recommended fixes
+
+Future versions will include **HTML reports** & **attack path visualization**.
+
+* * * * *
+
+🧪 **Continuous Integration**
+-----------------------------
+
+CloudStrike comes with a full GitHub Actions pipeline:
+
+-   Linting (`flake8`)
+
+-   Automated tests
+
+-   PR checks
+
+-   Branch protection support
+
+Located in:
+
+`.github/workflows/ci.yml`
+
+* * * * *
+
+🧱 **Roadmap**
+--------------
+
+-   Add HTML/Markdown report generator
+
+-   Add attack path graphing (IAM → escalation chain)
+
+-   Add multi-threaded scanning engine
+
+-   Add Terraform state leak detection
+
+-   Add "CloudStrike Web" dashboard (FastAPI + React)
+
+-   Add AWS/GCP/Azure lateral movement modules
+
+* * * * *
+
+📚 **Why CloudStrike Exists**
+-----------------------------
+
+Cloud misconfiguration remains the **#1 cause of cloud breaches**.\
+Attackers don't exploit CPU bugs --- they exploit:
+
+-   public buckets
+
+-   IAM misconfigurations
+
+-   metadata exposure
+
+-   weak role boundaries
+
+CloudStrike helps you detect these issues **before attackers do**.
+
+* * * * *
+
+🛡️ **Disclaimer**
+------------------
+
+CloudStrike is for **authorized environments only**.\
+The author is not responsible for misuse or illegal activity.\
+Use responsibly and ethically.
+
+* * * * *
+
+⭐ **Contributing**
+------------------
+
+Pull requests are welcome!
+
+Please open issues for:
+
+-   new modules
+
+-   performance improvements
+
+-   detection inaccuracies
+
+-   false positives
+
+* * * * *
+
+🏁 **License**
+--------------
+
+MIT License.
+
+* * * * *
+
+🌐 **Author**
+-------------
+
+**CloudStrike by Annafi Islam**\
+Built for offensive security engineers, pentesters, and cloud defenders.
