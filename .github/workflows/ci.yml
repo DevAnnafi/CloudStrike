@@ -30,8 +30,8 @@ jobs:
           pip3 install flake8
 
       - name: Lint with flake8
-        run: |
-          flake8 cloudstrike
+      run: |
+        python3 -m flake8 cloudstrike
 
       - name: Run tests
         run: |
