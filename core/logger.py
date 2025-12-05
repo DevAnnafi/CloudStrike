@@ -19,16 +19,18 @@ console = Console(theme=colored_messages)
 
 # Define a function to print informational messages.
 def print_info(msg):
+    print(f"[Informational] {msg}")
 
 
 # Define a function to print warning messages.
 def print_warning(msg):
-    
-
+    print(f"[Warning] {msg}")
 
 # Define a function to print error messages.
 def print_error(msg):
+    print(f"[Error] {msg}")
 
 # Define a function to print success messages.
 def print_success(msg):
+    print(f"[Successful] {msg}")
 
