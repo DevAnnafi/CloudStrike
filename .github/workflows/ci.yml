@@ -1,0 +1,42 @@
+# .github/workflows/ci.yml
+name: CloudStrike CI
+
+on:
+  push:
+    branches:
+      - main
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.14.1
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.1'   
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          flake8 cloudstrike
+
+      - name: Run tests
+        run: |
+          if [ -d "tests" ]; then
+            pip install pytest
+            pytest
+          else
+            echo "No tests directory found, skipping tests."
+          fi
