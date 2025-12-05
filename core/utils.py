@@ -6,6 +6,8 @@ import time
 from typing import *
 # Import pathlib for safe path handling.
 import pathlib
+# Import json for saving json files
+import json
 # Import logger functions from logger.py for showing messages.
 from logger import print_success, print_info, print_error, print_warning
 
