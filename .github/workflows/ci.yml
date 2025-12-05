@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: CloudStrike CI
 
 on:
@@ -14,28 +15,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Step 2: Setup Python 3.14.1
       - name: Set up Python 3.14.1
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14.1'   
+          python-version: '3.14.1'
 
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install -r requirements.txt
-          pip3 install flake8 pytest
+          python3 -m pip install --upgrade --force-reinstall flake8 pytest
+          if [ -f "requirements.txt" ]; then
+            python3 -m pip install -r requirements.txt
+          fi
 
+      # Step 4: Lint code with flake8
       - name: Lint with flake8
         run: |
           python3 -m flake8 cloudstrike
 
+      # Step 5: Run tests if tests directory exists
       - name: Run tests
         run: |
           if [ -d "tests" ]; then
-            python3 -m pytest
+            python3 -m pytest tests
           else
             echo "No tests directory found, skipping tests."
           fi
