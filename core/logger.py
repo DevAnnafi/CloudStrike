@@ -5,12 +5,12 @@ from rich.theme import Theme
 # Create a custom color theme dictionary that defines styles for info, warning,
 # error, and success messages.
 
-colored_messages = {
+colored_messages = Theme({
     "info" : "white",
     "warning" : "red",
     "error" : "yellow",
     "success" : "green"
-}
+})
 
 # Initialize a Console object using the custom theme.
 
