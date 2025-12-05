@@ -1,0 +1,65 @@
+# ============================
+# Core Networking & HTTP
+# ============================
+requests
+urllib3
+aiohttp
+dnspython
+
+# ============================
+# Cloud (AWS/Azure/GCP) APIs
+# ============================
+boto3          # AWS enumeration / exploitation
+botocore
+azure-identity
+azure-mgmt-resource
+google-auth
+google-api-python-client
+
+# ============================
+# Crypto, Encoding, Hashing
+# ============================
+cryptography
+pycryptodome
+
+# ============================
+# CLI / Terminal tools
+# ============================
+rich              # colored output, banners, tables
+colorama          # terminal colors
+click             # command-line interface generator
+
+# ============================
+# Pentesting / Security Utils
+# ============================
+paramiko          # SSH brute-force / exploitation
+scapy             # packet crafting / scanning
+python-nmap       # wrapper for nmap scans
+pyjwt             # JWT exploitation
+beautifulsoup4    # HTML parsing
+lxml              # fast XML parsing
+
+# ============================
+# Async utilities
+# ============================
+asyncio
+aioconsole
+
+# ============================
+# Serialization / Parsing
+# ============================
+pyyaml
+toml
+
+# ============================
+# Compression / Encoding Tools
+# ============================
+python-magic
+brotli
+zstandard
+
+# ============================
+# Development Tools
+# ============================
+flake8
+pytest
