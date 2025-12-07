@@ -8,58 +8,97 @@ from core.logger import print_info, print_warning, print_error, print_success
 from core.utils import safe_execute, format_finding
 import requests
 
-# Define a class or function responsible for enumerating EC2 instances.
-# This should include:
-#   - Connecting to EC2 using boto3
-#   - Listing instances, instance states, tags, IAM roles, and security groups
-#   - Capturing metadata that may indicate misconfigurations
-#   - Returning structured findings back to the main framework
+import botocore
 
 def enumerate_ec2_instance(session, logger, region, filters=None, return_raw=False):
+    """
+    Enumerate EC2 instances across one or multiple regions and return
+    normalized CloudStrike-ready findings.
+    """
+
     findings = []
-    try:
-        ec2 = session.resource("ec2", region_name="us-east-1")
-        
-        if filters:
-            instances = ec2.instances.filter(Filters=filters)
-        else:
-            instances = ec2.instances.all()
 
-        for instance in instances:
-            if return_raw:
-                findings.append(instance)
-                continue
+    # Support a single region (string) or a list of regions
+    regions = [region] if isinstance(region, str) else region
 
-            # Convert tags to dict format
-            tag_dict = {t["Key"]: t["Value"] for t in instance.tags} if instance.tags else {}
+    for rg in regions:
+        try:
+            # Connect to EC2 in requested region
+            ec2 = session.resource("ec2", region_name=rg)
 
-            # Build structured finding
-            instance_data = {
-                "InstanceId": instance.instance_id,
-                "InstanceType": instance.instance_type,
-                "State": instance.state.get("Name"),
-                "PrivateIpAddress": instance.private_ip_address,
-                "PublicIpAddress": instance.public_ip_address,
-                "LaunchTime": str(instance.launch_time),
-                "IAMInstanceProfile": getattr(instance, "iam_instance_profile", None),
-                "SecurityGroups": [{"GroupId": sg["GroupId"], "GroupName": sg["GroupName"]}
-                                   for sg in instance.security_groups],
-                "Tags": tag_dict
-            }
+            # Fetch EC2 instances
+            if filters:
+                instances = ec2.instances.filter(Filters=filters)
+            else:
+                instances = ec2.instances.all()
 
-            findings.append(instance_data)
+            for instance in instances:
 
-    except Exception as e:
-        logger.error(f"[EC2] Enumeration failed in region {region}: {str(e)}")
+                # Optionally return raw boto3 objects
+                if return_raw:
+                    findings.append(instance)
+                    continue
+
+                # Convert tags into dict
+                tag_dict = {t["Key"]: t["Value"] for t in instance.tags} if instance.tags else {}
+
+                # -------------------------------
+                # Basic Misconfiguration Detection
+                # -------------------------------
+                misconfigs = []
+
+                if instance.public_ip_address:
+                    misconfigs.append("Public IP Assigned")
+
+                if not instance.security_groups:
+                    misconfigs.append("No Security Groups Attached")
+
+                if not getattr(instance, "iam_instance_profile", None):
+                    misconfigs.append("No IAM Instance Profile")
+
+                # -------------------------------
+                # Normalized CloudStrike Finding
+                # -------------------------------
+                instance_data = {
+                    "ResourceType": "EC2 Instance",
+                    "Region": rg,
+                    "InstanceId": instance.instance_id,
+                    "InstanceType": instance.instance_type,
+                    "State": instance.state.get("Name"),
+                    "PrivateIpAddress": instance.private_ip_address,
+                    "PublicIpAddress": instance.public_ip_address,
+                    "LaunchTime": str(instance.launch_time),
+                    "IAMInstanceProfile": getattr(instance, "iam_instance_profile", None),
+                    "SecurityGroups": [
+                        {"GroupId": sg["GroupId"], "GroupName": sg["GroupName"]}
+                        for sg in instance.security_groups
+                    ],
+                    "Tags": tag_dict,
+                    "Misconfigurations": misconfigs
+                }
+
+                findings.append(instance_data)
+
+        # ----------------------------------
+        # Exception Handling
+        # ----------------------------------
+        except botocore.exceptions.ClientError as ce:
+            error_code = ce.response["Error"]["Code"]
+
+            if error_code in ["UnauthorizedOperation", "AccessDenied", "AccessDeniedException"]:
+                logger.warning(f"[EC2] Access denied in region {rg}. Missing IAM permissions.")
+            elif error_code in ["InvalidRegion", "OptInRequired"]:
+                logger.warning(f"[EC2] Region {rg} is disabled or requires opt-in.")
+            else:
+                logger.error(f"[EC2] Client error in {rg}: {str(ce)}")
+
+        except botocore.exceptions.EndpointConnectionError:
+            logger.error(f"[EC2] Unable to connect to region {rg}. Possibly invalid or offline.")
+
+        except Exception as e:
+            logger.error(f"[EC2] Enumeration failed in region {rg}: {str(e)}")
 
     return findings
-   
-
-
-# Inside the enumeration logic, make sure to:
-#   - Handle exceptions such as missing permissions or region errors
-#   - Support scanning multiple regions (optional but recommended)
-#   - Normalize output so it fits the report structure used by CloudStrike
 
 # Add a function or method that detects insecure configurations, such as:
 #   - Publicly exposed EC2 instances
