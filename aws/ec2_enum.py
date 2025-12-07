@@ -108,8 +108,9 @@ def enumerate_ec2_instance(session, logger, region, filters=None, return_raw=Fal
 def insecure_configurations(instance, session, logger):
     misconfig = []
     # Detect publicly exposed EC2 instances
-    if instance.public_ipv_address:
+    if instance.public_ip_address:
         misconfig.append("Publicly Exposed: Instance has a public IP")
+    
 
 # Return results as a dictionary or list of findings so they can be
 # added directly into the JSON report.
