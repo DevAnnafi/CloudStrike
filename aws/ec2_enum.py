@@ -16,7 +16,44 @@ import requests
 #   - Returning structured findings back to the main framework
 
 def enumerate_ec2_instance(session, logger, region, filters=None, return_raw=False):
-    
+    findings = []
+    try:
+        ec2 = session.resource("ec2", region_name="us-east-1")
+        
+        if filters:
+            instances = ec2.instances.filter(Filters=filters)
+        else:
+            instances = ec2.instances.all()
+
+        for instance in instances:
+            if return_raw:
+                findings.append(instance)
+                continue
+
+            # Convert tags to dict format
+            tag_dict = {t["Key"]: t["Value"] for t in instance.tags} if instance.tags else {}
+
+            # Build structured finding
+            instance_data = {
+                "InstanceId": instance.instance_id,
+                "InstanceType": instance.instance_type,
+                "State": instance.state.get("Name"),
+                "PrivateIpAddress": instance.private_ip_address,
+                "PublicIpAddress": instance.public_ip_address,
+                "LaunchTime": str(instance.launch_time),
+                "IAMInstanceProfile": getattr(instance, "iam_instance_profile", None),
+                "SecurityGroups": [{"GroupId": sg["GroupId"], "GroupName": sg["GroupName"]}
+                                   for sg in instance.security_groups],
+                "Tags": tag_dict
+            }
+
+            findings.append(instance_data)
+
+    except Exception as e:
+        logger.error(f"[EC2] Enumeration failed in region {region}: {str(e)}")
+
+    return findings
+   
 
 
 # Inside the enumeration logic, make sure to:
