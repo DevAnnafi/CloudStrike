@@ -107,10 +107,116 @@ def enumerate_ec2_instance(session, logger, region, filters=None, return_raw=Fal
 #   - Instances attached to overly permissive IAM roles
 def insecure_configurations(instance, session, logger):
     misconfig = []
-    # Detect publicly exposed EC2 instances
+
+    # Determine correct region based on instance placement
+    region = instance.placement["AvailabilityZone"][:-1]  # 'us-east-1a' -> 'us-east-1'
+
+    ec2 = session.client("ec2", region_name=region)
+    iam = session.client("iam")
+
+    # ---------------------------------------------------------------------
+    # 1. Public Exposure
+    # ---------------------------------------------------------------------
     if instance.public_ip_address:
-        misconfig.append("Publicly Exposed: Instance has a public IP")
-    
+        misconfig.append("Public Exposure: Instance has a public IPv4 address.")
+
+    # ---------------------------------------------------------------------
+    # 2. Deprecated / Outdated AMI
+    # ---------------------------------------------------------------------
+    try:
+        ami_data = ec2.describe_images(ImageIds=[instance.image_id])
+        images = ami_data.get("Images", [])
+
+        if images:
+            ami = images[0]
+
+            # Deprecation marker
+            if ami.get("DeprecationTime"):
+                misconfig.append(
+                    f"Deprecated AMI: {instance.image_id} is deprecated as of {ami['DeprecationTime']}"
+                )
+
+            # Outdated AMI (>900 days)
+            if "CreationDate" in ami:
+                from datetime import datetime, timedelta
+                created = datetime.fromisoformat(ami["CreationDate"].replace("Z", "+00:00"))
+                if created < datetime.now(created.tzinfo) - timedelta(days=900):
+                    misconfig.append(f"Outdated AMI: Created on {ami['CreationDate']}")
+        else:
+            misconfig.append("AMI Lookup Failed: AMI not found.")
+
+    except Exception as e:
+        logger.warning(f"[EC2] Failed to inspect AMI for {instance.id}: {e}")
+
+    # ---------------------------------------------------------------------
+    # 3. IMDSv2 Enforcement
+    # ---------------------------------------------------------------------
+    try:
+        md = ec2.describe_instance_attribute(
+            InstanceId=instance.id,
+            Attribute="metadataOptions"
+        )
+        metadata = md.get("MetadataOptions", {})
+
+        if metadata.get("HttpTokens") != "required":
+            misconfig.append("IMDSv2 Not Enforced: HttpTokens not set to 'required'.")
+
+    except Exception as e:
+        logger.warning(f"[EC2] Metadata inspection failed for {instance.id}: {e}")
+
+    # ---------------------------------------------------------------------
+    # 4. IAM Role (permissions)
+    # ---------------------------------------------------------------------
+    profile = getattr(instance, "iam_instance_profile", None)
+
+    if not profile:
+        misconfig.append("IAM Role Missing: No IAM instance profile attached.")
+        return misconfig
+
+    try:
+        profile_name = profile["Arn"].split("/")[-1]
+        ip = iam.get_instance_profile(InstanceProfileName=profile_name)
+        roles = ip["InstanceProfile"].get("Roles", [])
+
+        for role in roles:
+            role_name = role["RoleName"]
+
+            # Managed policies
+            attached = iam.list_attached_role_policies(RoleName=role_name)["AttachedPolicies"]
+            for p in attached:
+                if p["PolicyName"] == "AdministratorAccess":
+                    misconfig.append(
+                        f"Permissive IAM Role: {role_name} has AdministratorAccess policy attached."
+                    )
+
+            # Inline policies
+            inline_names = iam.list_role_policies(RoleName=role_name)["PolicyNames"]
+            for pname in inline_names:
+                pol = iam.get_role_policy(RoleName=role_name, PolicyName=pname)["PolicyDocument"]
+
+                for stmt in pol.get("Statement", []):
+                    if stmt.get("Effect") == "Allow":
+
+                        # "*" Actions
+                        actions = stmt.get("Action")
+                        if actions == "*" or (isinstance(actions, list) and "*" in actions):
+                            misconfig.append(
+                                f"Permissive Inline Policy: {pname} in {role_name} allows '*' actions."
+                            )
+
+                        # "*" Resources
+                        resources = stmt.get("Resource")
+                        if resources == "*" or (isinstance(resources, list) and "*" in resources):
+                            misconfig.append(
+                                f"Permissive Inline Policy: {pname} in {role_name} uses '*' resources."
+                            )
+
+    except Exception as e:
+        logger.warning(f"[EC2] IAM inspection failed for instance {instance.id}: {e}")
+
+    return misconfig
+
+
 
 # Return results as a dictionary or list of findings so they can be
 # added directly into the JSON report.
