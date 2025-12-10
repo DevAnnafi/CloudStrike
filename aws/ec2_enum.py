@@ -220,7 +220,66 @@ def insecure_configurations(instance, session, logger):
 
 # Return results as a dictionary or list of findings so they can be
 # added directly into the JSON report.
+    misconfigs = insecure_configurations(
+        instance=instance,
+        session=session,
+        logger=logger
+    )
+
+    instance_data = {
+        "ResourceType": "EC2 Instance",
+        "Region": rg,
+        "InstanceId": instance.instance_id,
+        "InstanceType": instance.instance_type,
+        "State": instance.state.get("Name"),
+        "PrivateIpAddress": instance.private_ip_address,
+        "PublicIpAddress": instance.public_ip_address,
+        "LaunchTime": str(instance.launch_time),
+        "IAMInstanceProfile": getattr(instance, "iam_instance_profile", None),
+        "SecurityGroups": [
+            {"GroupId": sg["GroupId"], "GroupName": sg["GroupName"]}
+            for sg in instance.security_groups
+        ],
+        "Tags": tag_dict,
+        "Misconfigurations": misconfigs
+    }
+
+    findings.append(instance_data)
+
 
 # At the bottom, optionally define a convenience function such as:
 #   - run_ec2_enum()
 # that can be called by the CLI module.
+def run_ec2_enum(session, logger, regions=None, filters=None, return_raw=False):
+    """
+    Convenience wrapper that triggers EC2 enumeration with the common
+    parameters used by the CLI module.
+
+    Args:
+        session: Boto3 session object.
+        logger: Logger object for standardized output.
+        regions: String region (e.g., "us-east-1") or list of regions.
+        filters: Optional EC2 filters to apply during enumeration.
+        return_raw: If True, return raw boto3 instance objects.
+
+    Returns:
+        List of normalized CloudStrike findings.
+    """
+
+    # Default to us-east-1 if no region list provided
+    if regions is None:
+        regions = ["us-east-1"]
+
+    logger.info(f"[EC2] Starting enumeration for regions: {regions}")
+
+    results = enumerate_ec2_instance(
+        session=session,
+        logger=logger,
+        region=regions,
+        filters=filters,
+        return_raw=return_raw
+    )
+
+    logger.info(f"[EC2] Enumeration complete. {len(results)} findings collected.")
+    return results
+
