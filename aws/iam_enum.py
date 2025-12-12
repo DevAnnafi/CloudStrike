@@ -2,20 +2,10 @@
 # iam_enum.py
 # ---------------------------------------------------------------------------
 # Purpose:
-#   This module is responsible for enumerating AWS IAM resources and detecting
-#   high-risk misconfigurations and privilege escalation vectors.
+#   Enumerate AWS IAM resources and detect high‑risk misconfigurations and
+#   privilege escalation vectors.
 #
-#   IAM is a GLOBAL AWS service, meaning enumeration is not region-scoped.
-#
-#   The goal of this module is to identify:
-#     - IAM users, roles, and groups
-#     - Attached and inline policies
-#     - Dangerous permissions (e.g., iam:PassRole, sts:AssumeRole, "*")
-#     - Trust policy misconfigurations
-#     - Privilege escalation paths
-#
-#   All findings are normalized into CloudStrike-compatible output objects
-#   so they can be aggregated into the final report.
+#   IAM is a GLOBAL AWS service (not region‑scoped).
 # ---------------------------------------------------------------------------
 
 
@@ -23,250 +13,248 @@
 # Imports
 # ---------------------------------------------------------------------------
 
-# Import boto3 to interact with AWS IAM APIs.
-# A boto3 session will be injected by the CloudStrike CLI.
-#
-# Example usage (not written here):
-#   session.client("iam")
-#
-# IAM APIs used in this module would include:
-#   - list_users
-#   - list_roles
-#   - list_groups
-#   - list_attached_user_policies
-#   - list_user_policies
-#   - get_policy_version
-#   - get_role_policy
-#
-# import boto3
+import boto3
+from botocore.exceptions import ClientError, NoCredentialsError
 
+from core.logger import (
+    print_info,
+    print_warning,
+    print_error,
+    print_success
+)
 
-# Import botocore exceptions to handle permission errors, throttling,
-# missing credentials, and malformed API responses.
-#
-# Common exceptions handled:
-#   - ClientError (AccessDenied, UnauthorizedOperation)
-#   - NoCredentialsError
-#
-# import botocore
-
-
-# Import CloudStrike’s centralized logging helpers so all output is consistent
-# across AWS, Azure, and GCP modules.
-#
-# These helpers standardize formatting and severity:
-#   - print_info
-#   - print_warning
-#   - print_error
-#   - print_success
-#
-# from core.logger import print_info, print_warning, print_error, print_success
-
-
-# Import shared utility helpers used across CloudStrike modules.
-#
-# Typical utilities used here:
-#   - safe_execute: wraps AWS calls to prevent crashes
-#   - format_finding: normalizes output into report-ready structures
-#
-# from core.utils import safe_execute, format_finding
+from core.utils import (
+    safe_execute,
+    format_finding
+)
 
 
 # ---------------------------------------------------------------------------
 # Constants and Detection Rules
 # ---------------------------------------------------------------------------
 
-# Define a set of IAM actions that commonly enable privilege escalation.
-#
-# These permissions are dangerous because they allow attackers to:
-#   - Pass privileged roles to services
-#   - Assume higher-privileged roles
-#   - Attach or modify policies
-#   - Gain full administrative control
-#
-# Example dangerous actions:
-#   - iam:PassRole
-#   - sts:AssumeRole
-#   - iam:AttachRolePolicy
-#   - iam:PutRolePolicy
-#   - iam:CreatePolicyVersion
-#   - "*"
-#
-# DANGEROUS_ACTIONS = {...}
+DANGEROUS_ACTIONS = {
+    "*",
+    "iam:*",
+    "iam:PassRole",
+    "iam:AttachRolePolicy",
+    "iam:AttachUserPolicy",
+    "iam:PutRolePolicy",
+    "iam:PutUserPolicy",
+    "iam:CreatePolicy",
+    "iam:CreatePolicyVersion",
+    "iam:SetDefaultPolicyVersion",
+    "sts:AssumeRole"
+}
 
-
-# Define dangerous resource patterns.
-#
-# A policy that allows access to "*" resources is often a sign of
-# over-permissioning and poor least-privilege enforcement.
-#
-# DANGEROUS_RESOURCES = {"*"}
+DANGEROUS_RESOURCES = {"*"}
 
 
 # ---------------------------------------------------------------------------
-# Entry Point: enumerate_iam
+# Helper: Analyze Policy Document
 # ---------------------------------------------------------------------------
 
-# Define the main enumeration function called by the CLI.
-#
-# This function:
-#   - Receives a boto3 session and logger from the CLI
-#   - Enumerates IAM users, roles, and groups
-#   - Inspects policies for escalation risks
-#   - Returns normalized findings
-#
-# def enumerate_iam(session, logger, return_raw=False):
+def analyze_policy_document(policy_document):
+    misconfigs = []
 
+    statements = policy_document.get("Statement", [])
+    if isinstance(statements, dict):
+        statements = [statements]
 
-# ---------------------------------------------------------------------------
-# IAM Client Initialization
-# ---------------------------------------------------------------------------
+    for stmt in statements:
+        if stmt.get("Effect") != "Allow":
+            continue
 
-# Create an IAM client using the provided boto3 session.
-#
-# IAM is a global service, so no region is specified.
-#
-# iam = session.client("iam")
+        actions = stmt.get("Action", [])
+        resources = stmt.get("Resource", [])
 
+        if isinstance(actions, str):
+            actions = [actions]
+        if isinstance(resources, str):
+            resources = [resources]
 
-# Initialize an empty list to store findings.
-#
-# Each finding represents a security-relevant IAM object or issue.
-#
-# findings = []
+        for action in actions:
+            if action in DANGEROUS_ACTIONS:
+                misconfigs.append(f"Dangerous IAM Action Allowed: {action}")
+
+        for resource in resources:
+            if resource in DANGEROUS_RESOURCES:
+                misconfigs.append("Wildcard Resource Allowed ('*')")
+
+    return list(set(misconfigs))
 
 
 # ---------------------------------------------------------------------------
 # Enumerate IAM Users
 # ---------------------------------------------------------------------------
 
-# Call iam.list_users() to retrieve all IAM users in the account.
-#
-# Pagination would be required for large environments.
-#
-# For each user:
-#   - Capture username, ARN, creation date
-#   - Enumerate attached managed policies
-#   - Enumerate inline policies
-#   - Detect dangerous permissions in policies
-#
-# If return_raw is True:
-#   - Append raw boto3 user objects instead of normalized data
-#
-# Handle AccessDenied errors gracefully and log warnings.
+def enumerate_users(iam, logger):
+    findings = []
+
+    try:
+        users = iam.list_users().get("Users", [])
+
+        for user in users:
+            username = user["UserName"]
+            misconfigs = []
+
+            attached = iam.list_attached_user_policies(UserName=username)
+            for pol in attached.get("AttachedPolicies", []):
+                policy = iam.get_policy(PolicyArn=pol["PolicyArn"])
+                version_id = policy["Policy"]["DefaultVersionId"]
+
+                version = iam.get_policy_version(
+                    PolicyArn=pol["PolicyArn"],
+                    VersionId=version_id
+                )
+
+                misconfigs.extend(
+                    analyze_policy_document(version["PolicyVersion"]["Document"])
+                )
+
+            inline_policies = iam.list_user_policies(UserName=username)
+            for pname in inline_policies.get("PolicyNames", []):
+                pol = iam.get_user_policy(UserName=username, PolicyName=pname)
+                misconfigs.extend(analyze_policy_document(pol["PolicyDocument"]))
+
+            findings.append(format_finding(
+                resource_type="IAM User",
+                resource_id=username,
+                details={
+                    "Arn": user["Arn"],
+                    "CreateDate": str(user["CreateDate"])
+                },
+                misconfigurations=misconfigs
+            ))
+
+    except ClientError as e:
+        print_warning(f"[IAM] User enumeration failed: {e}")
+
+    return findings
 
 
 # ---------------------------------------------------------------------------
 # Enumerate IAM Groups
 # ---------------------------------------------------------------------------
 
-# Call iam.list_groups() to retrieve all IAM groups.
-#
-# For each group:
-#   - Capture group name and ARN
-#   - Enumerate users in the group
-#   - Enumerate attached and inline policies
-#   - Inspect policies for escalation risks
-#
-# Groups are critical because:
-#   - Permissions are often inherited indirectly
-#   - Users may not appear privileged at first glance
+def enumerate_groups(iam, logger):
+    findings = []
+
+    try:
+        groups = iam.list_groups().get("Groups", [])
+
+        for group in groups:
+            group_name = group["GroupName"]
+            misconfigs = []
+
+            attached = iam.list_attached_group_policies(GroupName=group_name)
+            for pol in attached.get("AttachedPolicies", []):
+                policy = iam.get_policy(PolicyArn=pol["PolicyArn"])
+                version_id = policy["Policy"]["DefaultVersionId"]
+
+                version = iam.get_policy_version(
+                    PolicyArn=pol["PolicyArn"],
+                    VersionId=version_id
+                )
+
+                misconfigs.extend(
+                    analyze_policy_document(version["PolicyVersion"]["Document"])
+                )
+
+            inline_policies = iam.list_group_policies(GroupName=group_name)
+            for pname in inline_policies.get("PolicyNames", []):
+                pol = iam.get_group_policy(GroupName=group_name, PolicyName=pname)
+                misconfigs.extend(analyze_policy_document(pol["PolicyDocument"]))
+
+            findings.append(format_finding(
+                resource_type="IAM Group",
+                resource_id=group_name,
+                details={
+                    "Arn": group["Arn"],
+                    "CreateDate": str(group["CreateDate"])
+                },
+                misconfigurations=misconfigs
+            ))
+
+    except ClientError as e:
+        print_warning(f"[IAM] Group enumeration failed: {e}")
+
+    return findings
 
 
 # ---------------------------------------------------------------------------
 # Enumerate IAM Roles
 # ---------------------------------------------------------------------------
 
-# Call iam.list_roles() to retrieve all IAM roles.
-#
-# For each role:
-#   - Capture role name and ARN
-#   - Inspect the trust (assume-role) policy
-#   - Identify external principals (cross-account access)
-#   - Detect overly permissive trust relationships
-#
-# Roles are a primary attack vector in cloud breaches.
+def enumerate_roles(iam, logger):
+    findings = []
+
+    try:
+        roles = iam.list_roles().get("Roles", [])
+
+        for role in roles:
+            role_name = role["RoleName"]
+            misconfigs = []
+
+            trust_policy = role.get("AssumeRolePolicyDocument", {})
+            misconfigs.extend(analyze_policy_document(trust_policy))
+
+            attached = iam.list_attached_role_policies(RoleName=role_name)
+            for pol in attached.get("AttachedPolicies", []):
+                policy = iam.get_policy(PolicyArn=pol["PolicyArn"])
+                version_id = policy["Policy"]["DefaultVersionId"]
+
+                version = iam.get_policy_version(
+                    PolicyArn=pol["PolicyArn"],
+                    VersionId=version_id
+                )
+
+                misconfigs.extend(
+                    analyze_policy_document(version["PolicyVersion"]["Document"])
+                )
+
+            inline_policies = iam.list_role_policies(RoleName=role_name)
+            for pname in inline_policies.get("PolicyNames", []):
+                pol = iam.get_role_policy(RoleName=role_name, PolicyName=pname)
+                misconfigs.extend(analyze_policy_document(pol["PolicyDocument"]))
+
+            findings.append(format_finding(
+                resource_type="IAM Role",
+                resource_id=role_name,
+                details={
+                    "Arn": role["Arn"],
+                    "CreateDate": str(role["CreateDate"])
+                },
+                misconfigurations=misconfigs
+            ))
+
+    except ClientError as e:
+        print_warning(f"[IAM] Role enumeration failed: {e}")
+
+    return findings
 
 
 # ---------------------------------------------------------------------------
-# Trust Policy Analysis
+# Entry Point
 # ---------------------------------------------------------------------------
 
-# Inspect each role’s AssumeRolePolicyDocument.
-#
-# Detect:
-#   - Wildcard principals
-#   - External AWS accounts
-#   - Services that should not assume the role
-#
-# Flag trust policies that violate least-privilege assumptions.
+def enumerate_iam(session, logger, return_raw=False):
+    print_info("[IAM] Starting IAM enumeration")
 
+    iam = session.client("iam")
+    findings = []
 
-# ---------------------------------------------------------------------------
-# Policy Inspection Logic
-# ---------------------------------------------------------------------------
+    findings.extend(enumerate_users(iam, logger))
+    findings.extend(enumerate_groups(iam, logger))
+    findings.extend(enumerate_roles(iam, logger))
 
-# For each attached managed policy:
-#   - Retrieve the default policy version
-#   - Parse policy statements
-#   - Identify Allow statements with dangerous actions or resources
-#
-# For each inline policy:
-#   - Retrieve policy document
-#   - Inspect statements the same way
-#
-# Normalize detected risks into misconfiguration findings.
+    print_success(f"[IAM] Enumeration complete: {len(findings)} findings collected")
+    return findings
 
 
 # ---------------------------------------------------------------------------
-# Privilege Escalation Detection
+# Optional Wrapper
 # ---------------------------------------------------------------------------
 
-# Identify known escalation paths such as:
-#   - iam:PassRole + service creation
-#   - sts:AssumeRole into higher-privileged roles
-#   - iam:* permissions
-#
-# Each detected path should be clearly described in findings,
-# including which identity enables the escalation.
-
-
-# ---------------------------------------------------------------------------
-# Exception Handling
-# ---------------------------------------------------------------------------
-
-# Catch and log:
-#   - AccessDenied errors (missing IAM permissions)
-#   - Throttling errors
-#   - Malformed policy documents
-#
-# Enumeration should continue even if partial failures occur.
-
-
-# ---------------------------------------------------------------------------
-# Return Results
-# ---------------------------------------------------------------------------
-
-# Log enumeration completion.
-#
-# Return the list of findings so they can be:
-#   - Aggregated into the final report
-#   - Serialized into JSON
-#   - Displayed in the CLI
-#
-# return findings
-
-
-# ---------------------------------------------------------------------------
-# Optional Wrapper Function
-# ---------------------------------------------------------------------------
-
-# Define a convenience wrapper function (e.g., run_iam_enum)
-# that can be called directly by the CLI.
-#
-# This wrapper:
-#   - Handles default arguments
-#   - Logs start/end status
-#   - Calls enumerate_iam internally
-#
-# def run_iam_enum(session, logger, return_raw=False):
+def run_iam_enum(session, logger, return_raw=False):
+    return enumerate_iam(session, logger, return_raw)
