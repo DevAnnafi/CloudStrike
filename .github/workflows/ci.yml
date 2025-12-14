@@ -36,7 +36,8 @@ jobs:
       - name: Lint Python code
         run: |
           echo "Linting CloudStrike source code..."
-          python -m flake8 cloudstrike tests
+          python -m flake8 aws azure gcp core cli.py
+
 
       # Step 5: Run tests if tests directory exists
       - name: Run tests
