@@ -32,12 +32,11 @@ jobs:
           pip install -r requirements.txt
           pip install flake8 pytest
 
-      # Step 4: Lint code with flake8
+      # Step 4: Lint all Python files
       - name: Lint Python code
         run: |
-          echo "Linting CloudStrike source code..."
-          python -m flake8 aws azure gcp core cli.py
-
+          echo "Linting all Python files in repository..."
+          python -m flake8 .
 
       # Step 5: Run tests if tests directory exists
       - name: Run tests
