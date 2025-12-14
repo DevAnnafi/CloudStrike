@@ -28,20 +28,22 @@ jobs:
       # Step 3: Install dependencies
       - name: Install dependencies
         run: |
-           python3.14 -m pip install --upgrade pip
-           pip3 install -r requirements.txt
-           pip3 install flake8
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pytest
 
       # Step 4: Lint code with flake8
-      - name: Lint with flake8
+      - name: Lint Python code
         run: |
-          python3.14 -m flake8 cloudstrike
+          echo "Linting CloudStrike source code..."
+          python -m flake8 cloudstrike tests
 
       # Step 5: Run tests if tests directory exists
       - name: Run tests
         run: |
           if [ -d "tests" ]; then
-            python3 -m pytest tests
+            echo "Running unit tests..."
+            python -m pytest tests
           else
             echo "No tests directory found, skipping tests."
           fi
