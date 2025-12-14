@@ -29,7 +29,7 @@ NOTE:
 import os
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
-from msgraph.core import GraphClient
+from msgraph_sdk import GraphServiceClient
 from typing import Dict, List
 
 
