@@ -1,6 +1,6 @@
 """
-CloudStrike - Azure IAM Enumeration Module
------------------------------------------
+CloudStrike - Azure IAM Enumeration Module (Updated)
+----------------------------------------------------
 
 Purpose:
     Enumerate Azure IAM (Entra ID + RBAC) configuration to identify
@@ -32,86 +32,56 @@ from azure.mgmt.authorization import AuthorizationManagementClient
 from msgraph_sdk import GraphServiceClient
 from typing import Dict, List
 
-
 # ---------------------------------------------------------
 # Authentication
 # ---------------------------------------------------------
 
 def get_credential():
     """
-    Obtain Azure credentials using the DefaultAzureCredential chain.
-
-    This allows authentication via:
-        - Azure CLI (az login)
-        - Managed Identity
-        - Environment variables
-
-    Returns:
-        DefaultAzureCredential object
+    Obtain Azure credentials using DefaultAzureCredential.
     """
     return DefaultAzureCredential()
 
+def get_graph_client(credential):
+    """
+    Initialize Microsoft Graph client using current msgraph-sdk.
+    """
+    return GraphServiceClient(credential=credential)
 
 # ---------------------------------------------------------
 # Azure RBAC Enumeration
 # ---------------------------------------------------------
 
 def enumerate_rbac_roles(subscription_id: str, credential) -> List[Dict]:
-    """
-    Enumerate RBAC role assignments for the given subscription.
-
-    Args:
-        subscription_id (str): Azure subscription ID
-        credential: Azure credential object
-
-    Returns:
-        List of role assignment dictionaries
-    """
     auth_client = AuthorizationManagementClient(
         credential=credential,
         subscription_id=subscription_id
     )
 
     print("\n[*] Enumerating Azure RBAC Role Assignments...\n")
-
     findings = []
 
-    # Retrieve all role assignments in the subscription
     for assignment in auth_client.role_assignments.list():
         role_info = {
             "principal_id": assignment.principal_id,
             "role_definition_id": assignment.role_definition_id,
             "scope": assignment.scope
         }
-
         print(f"Principal ID       : {assignment.principal_id}")
         print(f"Role Definition ID : {assignment.role_definition_id}")
         print(f"Scope              : {assignment.scope}")
         print("-" * 60)
-
         findings.append(role_info)
 
     return findings
 
-
 def enumerate_role_definitions(subscription_id: str, credential) -> Dict[str, str]:
-    """
-    Map Role Definition IDs to human-readable role names.
-
-    Args:
-        subscription_id (str): Azure subscription ID
-        credential: Azure credential object
-
-    Returns:
-        Dictionary mapping role_definition_id -> role_name
-    """
     auth_client = AuthorizationManagementClient(
         credential=credential,
         subscription_id=subscription_id
     )
 
     print("\n[*] Enumerating Role Definitions...\n")
-
     role_map = {}
 
     for role in auth_client.role_definitions.list(scope=f"/subscriptions/{subscription_id}"):
@@ -122,110 +92,57 @@ def enumerate_role_definitions(subscription_id: str, credential) -> Dict[str, st
 
     return role_map
 
-
 # ---------------------------------------------------------
-# Azure AD (Entra ID) Enumeration
+# Azure AD Enumeration (Users, Groups, Service Principals)
 # ---------------------------------------------------------
-
-def get_graph_client(credential):
-    """
-    Initialize Microsoft Graph client.
-
-    Args:
-        credential: Azure credential object
-
-    Returns:
-        GraphClient instance
-    """
-    return GraphClient(credential=credential)
-
 
 def enumerate_users(graph_client):
     """
-    Enumerate Azure AD users.
-
-    Args:
-        graph_client: Microsoft Graph client
+    Enumerate Azure AD users using msgraph-sdk.
     """
     print("\n[*] Enumerating Azure AD Users...\n")
-
-    response = graph_client.get("/users")
-    users = response.json().get("value", [])
-
+    users = graph_client.users.get().value
     for user in users:
-        print(f"User Display Name : {user.get('displayName')}")
-        print(f"User Principal   : {user.get('userPrincipalName')}")
-        print(f"User ID          : {user.get('id')}")
+        print(f"User Display Name : {user.display_name}")
+        print(f"User Principal   : {user.user_principal_name}")
+        print(f"User ID          : {user.id}")
         print("-" * 60)
-
 
 def enumerate_groups(graph_client):
     """
-    Enumerate Azure AD groups.
-
-    Args:
-        graph_client: Microsoft Graph client
+    Enumerate Azure AD groups using msgraph-sdk.
     """
     print("\n[*] Enumerating Azure AD Groups...\n")
-
-    response = graph_client.get("/groups")
-    groups = response.json().get("value", [])
-
+    groups = graph_client.groups.get().value
     for group in groups:
-        print(f"Group Name : {group.get('displayName')}")
-        print(f"Group ID   : {group.get('id')}")
+        print(f"Group Name : {group.display_name}")
+        print(f"Group ID   : {group.id}")
         print("-" * 60)
-
 
 def enumerate_service_principals(graph_client):
     """
-    Enumerate Azure AD service principals (App Registrations).
-
-    Args:
-        graph_client: Microsoft Graph client
+    Enumerate Azure AD service principals using msgraph-sdk.
     """
     print("\n[*] Enumerating Service Principals...\n")
-
-    response = graph_client.get("/servicePrincipals")
-    sps = response.json().get("value", [])
-
+    sps = graph_client.service_principals.get().value
     for sp in sps:
-        print(f"Service Principal Name : {sp.get('displayName')}")
-        print(f"App ID                : {sp.get('appId')}")
-        print(f"Object ID             : {sp.get('id')}")
+        print(f"Service Principal Name : {sp.display_name}")
+        print(f"App ID                : {sp.app_id}")
+        print(f"Object ID             : {sp.id}")
         print("-" * 60)
-
 
 # ---------------------------------------------------------
 # Privileged Role Detection
 # ---------------------------------------------------------
 
 def identify_privileged_roles(rbac_assignments: List[Dict], role_definitions: Dict[str, str]):
-    """
-    Identify principals with high-risk roles.
-
-    High-risk roles include:
-        - Owner
-        - Contributor
-        - Global Administrator
-        - Privileged Role Administrator
-
-    Args:
-        rbac_assignments (list): RBAC assignment data
-        role_definitions (dict): Role ID -> Role Name mapping
-    """
     print("\n[*] Identifying Privileged Role Assignments...\n")
-
     high_risk_roles = {
-        "Owner",
-        "Contributor",
-        "Global Administrator",
-        "Privileged Role Administrator"
+        "Owner", "Contributor", "Global Administrator", "Privileged Role Administrator"
     }
 
     for assignment in rbac_assignments:
         role_name = role_definitions.get(assignment["role_definition_id"], "Unknown")
-
         if role_name in high_risk_roles:
             print("[!!!] HIGH RISK ROLE DETECTED")
             print(f"Principal ID : {assignment['principal_id']}")
@@ -233,17 +150,12 @@ def identify_privileged_roles(rbac_assignments: List[Dict], role_definitions: Di
             print(f"Scope       : {assignment['scope']}")
             print("-" * 60)
 
-
 # ---------------------------------------------------------
 # Main Execution
 # ---------------------------------------------------------
 
 def main():
-    """
-    Entry point for Azure IAM enumeration.
-    """
     subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
-
     if not subscription_id:
         print("[!] ERROR: AZURE_SUBSCRIPTION_ID environment variable not set.")
         return
@@ -253,21 +165,18 @@ def main():
 
     credential = get_credential()
 
-    # RBAC Enumeration
+    # RBAC
     rbac_assignments = enumerate_rbac_roles(subscription_id, credential)
     role_definitions = enumerate_role_definitions(subscription_id, credential)
-
-    # Privilege Analysis
     identify_privileged_roles(rbac_assignments, role_definitions)
 
-    # Azure AD Enumeration
+    # Azure AD
     graph_client = get_graph_client(credential)
     enumerate_users(graph_client)
     enumerate_groups(graph_client)
     enumerate_service_principals(graph_client)
 
     print("\n[*] Azure IAM Enumeration Completed Successfully")
-
 
 if __name__ == "__main__":
     main()
