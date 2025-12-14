@@ -35,7 +35,7 @@ jobs:
       # Step 4: Lint code with flake8
       - name: Lint with flake8
         run: |
-          python3.14 -m flake8 Cloudstrike
+          python3.14 -m flake8 cloudstrike
 
       # Step 5: Run tests if tests directory exists
       - name: Run tests
