@@ -1,14 +1,14 @@
-# 🔐 CloudStrike
+# CloudStrike
 
 Multi-Cloud Security Penetration Testing Framework
 
 ## Features
 
-- ☁️ Multi-cloud support (AWS, Azure, GCP)
-- 🔍 Comprehensive security scanning
-- 📊 Detailed reporting (HTML, JSON, PDF)
-- 🛡️ Vulnerability detection
-- ⚡ Fast and efficient
+-  Multi-cloud support (AWS, Azure, GCP)
+-  Comprehensive security scanning
+-  Detailed reporting (HTML, JSON, PDF)
+-  Vulnerability detection
+-  Fast and efficient
 
 ## Installation
 ```bash
