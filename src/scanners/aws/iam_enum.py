@@ -57,16 +57,40 @@ class IAMScanner():
     
         return permissions
     def check_create_access_key(self, permissions):
-        pass
+        if "iam:CreateAccessKey" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - CreateAccessKey",
+                "resource" : "Current User",
+                "description" : "User has iam:CreateAccessKey permission, can create keys for other users"
+            })
        
-    def check_attach_user_policy(self):
-        pass
+    def check_attach_user_policy(self, permissions):
+        if "iam:AttachUserPolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - AttachUserPolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:AttachUserPolicy permission, can attach admin policies to themselves"
+            })
 
-    def check_put_user_policy(self):
-        pass
+    def check_put_user_policy(self, permissions):
+        if "iam:PutUserPolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PutUserPolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:PutUserPolicy permission, can create inline policies with admin privileges"
+            })
 
-    def check_passrole_lambda(self):
-        pass
+    def check_passrole_lambda(self, permissions):
+        if "iam:PassRole" in permissions and "lambda:CreateFunction" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title": "IAM Privilege Escalation - PassRole + Lambda",
+                "resource" : "Current User",
+                "description" : "User has iam:PassRole and lambda:CreateFunction permissions, can assume privileged roles via Lambda"
+            })
 
 
 
