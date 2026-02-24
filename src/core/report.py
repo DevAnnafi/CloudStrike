@@ -2,7 +2,6 @@ from datetime import datetime
 import json
 
 class ReportGenerator:
-
     def __init__(self, findings, cloud_service):
         self.findings = findings
         self.cloud_service = cloud_service
