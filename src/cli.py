@@ -32,19 +32,19 @@ def run_scan(args):
         all_findings = []
         if args.aws or args.all:
             if args.verbose:
-                console.print("[cyan]Scanning S3 buckets...[/cyan]")
+                console.print("[bold yellow]AWS[/bold yellow] [bright_white]→ Scanning S3 buckets...[/bright_white]")
             scanner = S3Scanner(args.profile)
             findings = scanner.scan_buckets()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[yellow]Scanning for IAM vulnerabilies...[/yellow]")
+                console.print("[bold yellow]AWS[/bold yellow] [bright_white]→ Scanning IAM privileges...[/bright_white]")
             iam_scanner = AWSIAMScanner(args.profile)
             findings = iam_scanner.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[green]Scanning for EC2 Instances...[/green]")
+                console.print("[bold yellow]AWS[/bold yellow] [bright_white]→ Scanning EC2 metadata...[/bright_white]")
             ec2_scanner = EC2MetaDataScanner()
             findings = ec2_scanner.scan()
             all_findings.extend(findings)
@@ -54,19 +54,19 @@ def run_scan(args):
                 capture_output=True, text=True)
             subscription_id = result.stdout.strip()
             if args.verbose:
-                console.print("[cyan]Scanning for MetaData vulnerabilities...[/cyan]")
+                console.print("[bold blue]Azure[/bold blue] [bright_white]→ Scanning blob storage...[/bright_white]")
             metadata = MetaDataProbe()
             findings = metadata.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[yellow]Scanning for StorageChecker vulnerabilities...[/yellow]")
+                console.print("[bold blue]Azure[/bold blue] [bright_white]→ Scanning storage containers...[/bright_white]")
             storage_checker = StorageChecker(subscription_id)
             findings = storage_checker.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[green]Scanning for RBAC vulnerabilities...[/green]")
+                console.print("[bold blue]Azure[/bold blue] [bright_white]→ Scanning RBAC roles...[/bright_white]")
             rbac = RBACAnalyzer(subscription_id)
             findings = rbac.scan()
             all_findings.extend(findings)
@@ -76,19 +76,19 @@ def run_scan(args):
                 capture_output=True, text=True)
             project_id = result.stdout.strip()
             if args.verbose:
-                console.print("[cyan]Scanning for Bucket vulnerabilities...[/cyan]")
+                console.print("[bold green]GCP[/bold green] [bright_white]→ Scanning storage buckets...[/bright_white]")
             bucket_scan = BucketScanner(project_id)
             findings = bucket_scan.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[yellow]Scanning for IAM vulnerabilities...[/yellow]")
+                console.print("[bold green]GCP[/bold green] [bright_white]→ Scanning IAM bindings...[/bright_white]")
             iam_scan = GCPIAMScanner(project_id)
             findings = iam_scan.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[green]Scanning for MetaData vulnerabilities...[/green]")
+                console.print("[bold green]GCP[/bold green] [bright_white]→ Scanning compute metadata...[/bright_white]")
             metadata_scan = MetaDataScanner()
             findings = metadata_scan.scan()
             all_findings.extend(findings)
