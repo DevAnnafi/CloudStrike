@@ -1,43 +1,24 @@
-# Cloud SDKs
-boto3==1.34.34
-botocore==1.34.34
-azure-identity==1.15.0
-azure-mgmt-compute==30.5.0
-azure-mgmt-storage==21.1.0
-azure-mgmt-network==25.2.0
-azure-mgmt-resource==23.0.1
-azure-mgmt-sql==3.0.1
-google-cloud-compute==1.16.1
-google-cloud-storage==2.14.0
-google-cloud-iam==2.13.0
-google-auth==2.27.0
+# Core dependencies
+rich>=13.0.0
+requests>=2.31.0
+pyyaml>=6.0.0
+jsonschema>=4.21.0
 
-# Security & Network
-paramiko==3.4.0
-cryptography==42.0.2
-requests==2.31.0
-pycryptodome==3.20.0
+# AWS
+boto3>=1.34.0
 
-# Scanning
-scapy==2.5.0
-python-nmap==0.7.1
+# Azure
+azure-identity>=1.15.0
+azure-mgmt-storage>=21.0.0
+azure-mgmt-authorization>=4.0.0
+azure-storage-blob>=12.19.0
 
-# Reporting
-jinja2==3.1.3
-markdown==3.5.2
-pyyaml==6.0.1
-weasyprint==61.1
-colorama==0.4.6
-tabulate==0.9.0
-rich==13.7.0
+# GCP
+google-cloud-storage>=2.14.0
+google-cloud-resource-manager>=1.12.0
+google-auth>=2.27.0
+google-api-python-client>=2.0.0
 
-# Data Handling
-pandas==2.2.0
-jsonschema==4.21.1
-
-# CLI
-click==8.1.7
-tqdm==4.66.1
-
-# Utilities
-python-dotenv==1.0.1
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
