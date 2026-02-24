@@ -26,6 +26,22 @@ class IAMScanner():
             self.check_attach_user_policy(permissions)
             self.check_passrole_lambda(permissions)
             self.check_put_user_policy(permissions)
+            self.check_attach_group_policy(permissions)
+            self.check_attach_role_policy(permissions)
+            self.check_put_group_policy(permissions)
+            self.check_put_role_policy(permissions)
+            self.check_create_policy(permissions)
+            self.check_create_login_profile(permissions)
+            self.check_update_login_profile(permissions)
+            self.check_set_default_policy_version(permissions)
+            self.check_passrole_ec2(permissions)
+            self.check_passrole_cloudformation(permissions)
+            self.check_passrole_data_pipeline(permissions)
+            self.check_passrole_glue(permissions)
+            self.check_assume_role(permissions)
+            self.check_lambda_invoke(permissions)
+            self.check_ec2_run_instances(permissions)
+            self.check_wildcard(permissions)
 
             return self.findings
     
@@ -90,6 +106,151 @@ class IAMScanner():
                 "title": "IAM Privilege Escalation - PassRole + Lambda",
                 "resource" : "Current User",
                 "description" : "User has iam:PassRole and lambda:CreateFunction permissions, can assume privileged roles via Lambda"
+            })
+
+    def check_attach_group_policy(self, permissions):
+        if "iam:AttachGroupPolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - AttachGroupPolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:AttachGroupPolicy permissions, can attach admin policies to groups"
+            })
+
+    def check_attach_role_policy(self, permissions):
+        if "iam:AttachRolePolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - AttachRolePolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:AttachRolePolicy permissions, can attach admin policies to roles"
+            })
+
+    def check_put_group_policy(self, permissions):
+        if "iam:PutGroupPolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PutGroupPolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:PutGroupPolicy permissions, can create inline policies on groups"
+            })
+
+    def check_put_role_policy(self, permissions):
+        if "iam:PutRolePolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PutRolePolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:PutRolePolicy permissions, can create inline policies to roles"
+            })
+
+    def check_create_policy(self, permissions):
+        if "iam:CreatePolicy" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - CreatePolicy",
+                "resource" : "Current User",
+                "description" : "User has iam:CreatePolicy permissions, can create new admin policies"
+            })
+
+    def check_create_login_profile(self,permissions):
+        if "iam:CreateLoginProfile" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - CreateLoginProfile",
+                "resource" : "Current User",
+                "description" : "User has iam:CreateLoginProfile permissions, can create console passwords for other users"
+            })
+    
+
+    def check_update_login_profile(self, permissions):
+        if "iam:UpdateLoginProfile" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - UpdateLoginProfile",
+                "resource" : "Current User",
+                "description" : "User has iam:UpdateLoginProfile permissions, can change console passwords for other users"
+            })
+
+    def check_set_default_policy_version(self,permissions):
+        if "iam:SetDefaultPolicyVersion" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - SetDefaultPolicyVersion",
+                "resource" : "Current User",
+                "description" : "User has iam:SetDefaultPolicyVersion permission, can revert policies to privileged versions"
+            })
+
+    def check_passrole_ec2(self,permissions):
+        if "iam:PassRole" in permissions and "ec2:RunInstances" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PassRole + EC2",
+                "resource" : "Current User",
+                "description" : "User has iam:PassRole and ec2:RunInstances permissions, can launch EC2 instances with privileged roles"
+            })
+
+    def check_passrole_cloudformation(self,permissions):
+        if "iam:PassRole" in permissions and "cloudformation:CreateStack" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PassRole and Cloudformation",
+                "resource" : "Current User",
+                "description" : "User has iam:PassRole and cloudformation:CreateStack permissions, can create stacks with privileged roles"
+            }) 
+
+    def check_passrole_data_pipeline(self, permissions):
+        if "iam:PassRole" in permissions and "datapipeline:CreatePipeline" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PassRole and Datapipeline",
+                "resource" : "Current User",
+                "description" : "User has iam:PassRole and datapipeline:CreatePipeline permissions, can create pipelines with privileged roles"
+            })
+
+    def check_passrole_glue(self, permissions):
+        if "iam:PassRole" in permissions and "glue:CreateDevEndpoint" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - PassRole + Glue",
+                "resource" : "Current User",
+                "description" : "User has iam:PassRole and glue:CreateDevEndpoint permissions, can create Glue endpoints with privileged roles"              
+            })
+
+    def check_assume_role(self, permissions):
+        if "sts:AssumeRole" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - AssumeRole",
+                "resource" : "Current User",
+                "description" : "User has sts:AssumeRole permission, can assume privileged roles"
+            })
+    
+    def check_lambda_invoke(self, permissions):
+        if "lambda:InvokeFunction" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - InvokeFunction",
+                "resource" : "Current User",
+                "description" : "User has lambda:InvokeFunction permission, can invoke Lambda functions with privileged roles"
+            })
+
+    def check_ec2_run_instances(self, permissions):
+        if "ec2:RunInstances" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - RunInstances",
+                "resource" : "Current User",
+                "description" : "User has ec2:RunInstances permission, can launch instances with instance profiles"          
+            })
+
+    def check_wildcard(self, permissions):
+        if "iam:*" in permissions or "*:*" in permissions or "*" in permissions:
+            self.findings.append({
+                "severity" : Severity.CRITICAL.value,
+                "title" : "IAM Privilege Escalation - Wildcard Permissions",
+                "resource" : "Current User",
+                "description" : "User has wildcard permissions, grants excessive privileges"                  
             })
 
 
