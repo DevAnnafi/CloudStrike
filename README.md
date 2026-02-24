@@ -1,6 +1,6 @@
 # CloudStrike
 
-Multi-Cloud Security Penetration Testing Framework
+Multi-Cloud Security Assessment Testing Tool
 
 ## Features
 
