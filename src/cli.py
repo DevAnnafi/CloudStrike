@@ -1,6 +1,7 @@
 import argparse
-from scanners.aws import S3Scanner, IAMScanner, EC2MetaDataScanner
+from scanners.aws import S3Scanner, IAMScanner as AWSIAMScanner, EC2MetaDataScanner
 from scanners.azure import MetaDataProbe, StorageChecker, RBACAnalyzer
+from scanners.gcp import BucketScanner, IAMScanner as GCPIAMScanner, MetaDataScanner
 import subprocess
 from core import CloudProvider, progress_context, ReportGenerator
 from rich.console import Console
@@ -15,6 +16,7 @@ def main():
     scan_parser = subparsers.add_parser('scan', help='Scan cloud infrastructure for vulnerabilities')
     scan_parser.add_argument('--aws', action='store_true')
     scan_parser.add_argument('--azure', action='store_true')
+    scan_parser.add_argument('--gcp', action='store_true')
     scan_parser.add_argument('--output', required=True)
     scan_parser.add_argument('--format', choices=['json', 'html'], default='json')
     scan_parser.add_argument('--all', action='store_true')
@@ -37,7 +39,7 @@ def run_scan(args):
 
             if args.verbose:
                 console.print("[yellow]Scanning for IAM vulnerabilies...[/yellow]")
-            iam_scanner = IAMScanner(args.profile)
+            iam_scanner = AWSIAMScanner(args.profile)
             findings = iam_scanner.scan()
             all_findings.extend(findings)
 
@@ -58,15 +60,37 @@ def run_scan(args):
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[cyan]Scanning for StorageChecker vulnerabilities...[/cyan]")
+                console.print("[yellow]Scanning for StorageChecker vulnerabilities...[/yellow]")
             storage_checker = StorageChecker(subscription_id)
             findings = storage_checker.scan()
             all_findings.extend(findings)
 
             if args.verbose:
-                console.print("[cyan]Scanning for RBAC vulnerabilities...[/cyan]")
+                console.print("[green]Scanning for RBAC vulnerabilities...[/green]")
             rbac = RBACAnalyzer(subscription_id)
             findings = rbac.scan()
+            all_findings.extend(findings)
+
+        if args.gcp or args.all:
+            result = subprocess.run(['gcloud', 'config', 'get-value', 'project'], 
+                capture_output=True, text=True)
+            project_id = result.stdout.strip()
+            if args.verbose:
+                console.print("[cyan]Scanning for Bucket vulnerabilities...[/cyan]")
+            bucket_scan = BucketScanner(project_id)
+            findings = bucket_scan.scan()
+            all_findings.extend(findings)
+
+            if args.verbose:
+                console.print("[yellow]Scanning for IAM vulnerabilities...[/yellow]")
+            iam_scan = GCPIAMScanner(project_id)
+            findings = iam_scan.scan()
+            all_findings.extend(findings)
+
+            if args.verbose:
+                console.print("[green]Scanning for MetaData vulnerabilities...[/green]")
+            metadata_scan = MetaDataScanner()
+            findings = metadata_scan.scan()
             all_findings.extend(findings)
 
         console.print("\n[bold] Scan Summary: [/bold]")
@@ -85,10 +109,12 @@ def run_scan(args):
     
         console.print(table)
 
-        if (args.aws and args.azure) or args.all:
+        if ((args.aws and args.azure) or (args.aws and args.gcp) or (args.azure and args.gcp)) or args.all:
             cloud_provider = "Multi-Cloud"
         elif args.azure:
             cloud_provider = "Azure"
+        elif args.gcp:
+            cloud_provider = "GCP"
         else:
             cloud_provider = "AWS"
 
