@@ -5,12 +5,13 @@ from core.enums import CloudProvider, Severity, FindingType
 
 
 class StorageChecker():
-    def __init__(self, subscription_id=None):
+    def __init__(self, subscription_id=None, account_name=None):
         self.findings = []
-
         self.subscription_id = subscription_id
+        self.account_name = account_name or "Default"
+        
         self.credential = DefaultAzureCredential()
-        self.storage_client = StorageManagementClient(self.credential, self.subscription_id)
+        self.storage_client = StorageManagementClient(self.credential, subscription_id)
 
     def scan(self):
         try:
@@ -33,5 +34,8 @@ class StorageChecker():
             "severity" : Severity.CRITICAL.value,
             "title" : "Public Azure Blob Container",
             "resource" : f"{account_name}/{container_name}",
+            "cloud_provider": "Azure", 
+            "account_id": self.subscription_id,  
+            "account_name": self.account_name,
             "description" : f"Container has public access level:{public_access}"
         })

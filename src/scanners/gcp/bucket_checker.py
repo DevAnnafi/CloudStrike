@@ -2,11 +2,12 @@ from google.cloud import storage
 from core.enums import CloudProvider, Severity, FindingType
 
 class BucketScanner():
-    def __init__(self, project_id=None):
+    def __init__(self, project_id=None, account_name=None):
         self.findings = []
-
-        self.storage_client = storage.Client(project=project_id)
         self.project_id = project_id
+        self.account_name = account_name or "Default"
+        
+        self.storage_client = storage.Client(project=project_id)
 
     def scan(self):
         try:
@@ -27,6 +28,9 @@ class BucketScanner():
                     "severity" : Severity.CRITICAL.value,
                     "title" : "Public GCP Storage Bucket",
                     "resource" : bucket.name,
+                    "cloud_provider": "GCP", 
+                    "account_id": self.project_id,  
+                    "account_name": self.account_name,
                     "description" : f"Bucket allows public access via IAM policy"
                 })
 
