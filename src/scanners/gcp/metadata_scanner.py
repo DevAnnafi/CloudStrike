@@ -3,8 +3,10 @@ from core.enums import Severity, CloudProvider, FindingType
 
 class MetaDataScanner():
     METADATA_ENDPOINT = "http://metadata.google.internal/computeMetadata/v1/"
-    def __init__(self):
+    def __init__(self, account_name=None):
         self.findings = []
+        self.account_name = account_name or "Default"
+        self.project_id = "N/A"  
 
     def scan(self):
         self.check_imds_version()
@@ -17,6 +19,9 @@ class MetaDataScanner():
             "severity" : Severity.CRITICAL.value,
             "title" : "GCP IMDS Accessible",
             "resource" : "GCP Instance",
+            "cloud_provider": "GCP", 
+            "account_id": self.project_id,  
+            "account_name": self.account_name,
             "description" : "Instance Metadata Service is accessible, metadata service is at a security risk"
         })
 
