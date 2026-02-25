@@ -37,6 +37,7 @@ credentials.json
 *.key
 config/secrets.yaml
 config/credentials/
+config/environments.yml
 
 # Testing
 .pytest_cache/
