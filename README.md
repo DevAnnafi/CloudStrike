@@ -121,6 +121,88 @@ Scanning for EC2 Instances...
 └──────────┴───────┘
 Report saved to report.json with 3 findings
 ```
+## Multi-Account Scanning (v2)
+
+CloudSecure v2 supports scanning multiple AWS accounts, Azure subscriptions, and GCP projects from a single configuration file.
+
+### Setup
+
+1. **Create a configuration file** (`config/environments.yml`):
+```yaml
+production:
+  aws:
+    - profile: prod-account-1
+      name: "Production Main"
+    - profile: prod-account-2
+      name: "Production DR"
+  azure:
+    - subscription_id: "abc-123-def-456"
+      name: "Production Subscription"
+  gcp:
+    - project_id: "my-prod-project"
+      name: "Production GCP"
+
+staging:
+  aws:
+    - profile: staging
+      name: "Staging Account"
+```
+
+2. **Configure cloud credentials**:
+
+**AWS:**
+```bash
+[prod-account-1]
+aws_access_key_id = YOUR_KEY
+aws_secret_access_key = YOUR_SECRET
+
+[prod-account-2]
+aws_access_key_id = YOUR_KEY
+aws_secret_access_key = YOUR_SECRET
+```
+
+**Azure:**
+```bash
+az login
+az account set --subscription "abc-123-def-456"
+```
+
+**GCP:**
+```bash
+gcloud auth application-default login
+gcloud config set project my-prod-project
+```
+
+### Usage
+
+**Scan a specific environment:**
+```bash
+python src/cli.py scan --environment production --config config/environments.yml --output report.json --verbose
+```
+
+**Single account mode (v1) still works:**
+```bash
+python src/cli.py scan --aws --output report.json
+```
+
+### Output
+
+Multi-account reports include enhanced findings with account tracking:
+```json
+{
+  "findings": [
+    {
+      "severity": "critical",
+      "title": "Public S3 Bucket",
+      "resource": "my-bucket",
+      "cloud_provider": "AWS",
+      "account_id": "123456789012",
+      "account_name": "Production Main",
+      "description": "Bucket grants public access"
+    }
+  ]
+}
+```
 
 ## Command Line Options
 ```
