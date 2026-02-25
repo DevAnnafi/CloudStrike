@@ -5,13 +5,6 @@ from core.enums import Severity, CloudProvider, FindingType
 class EC2MetaDataScanner():
     METADATA_ENDPOINT = "http://169.254.169.254/latest/meta-data/"
     def __init__(self, profile_name=None, account_name=None):
-        """
-        Initialize EC2 metadata scanner.
-        
-        Args:
-            profile_name (str, optional): AWS CLI profile name.
-            account_name (str, optional): Friendly name for this account.
-        """
         self.findings = []
         self.account_name = account_name or "Default"
 

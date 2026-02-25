@@ -4,13 +4,6 @@ from core.enums import Severity, CloudProvider, FindingType
 
 class IAMScanner():
     def __init__(self, profile_name=None, account_name=None):
-        """
-        Initialize IAM scanner with optional AWS profile.
-        
-        Args:
-            profile_name (str, optional): AWS CLI profile name.
-            account_name (str, optional): Friendly name for this account.
-        """
         self.findings = []
         self.account_name = account_name or "Default"
         

@@ -1,17 +1,10 @@
 production:
   aws:
-    - profile: prod-account-1
-      name: "Production Main"
-    - profile: prod-account-2
-      name: "Production DR"
+    - profile: default
+      name: "Production AWS Account"
   azure:
     - subscription_id: "abc-123-def"
       name: "Production Subscription"
   gcp:
     - project_id: "prod-gcp-project"
       name: "Production GCP"
-
-staging:
-  aws:
-    - profile: staging-aws
-      name: "Staging Account"
