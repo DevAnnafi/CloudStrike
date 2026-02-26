@@ -23,24 +23,46 @@ class IAMScanner():
 
 
     def check_binding(self, binding):
-        if binding.role == "roles/owner" or binding.role == "roles/editor":
+        if binding.role == "roles/owner":
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
-                "title" : "Overly Permissive GCP IAM Binding",
-                "resource" : binding.role,
-                "cloud_provider": "GCP", 
-                "account_id": self.project_id,  
+                "severity": Severity.CRITICAL.value,
+                "title": "Overly Permissive GCP IAM Binding - Owner",
+                "resource": binding.role,
+                "cloud_provider": "GCP",
+                "account_id": self.project_id,
                 "account_name": self.account_name,
-                "description" : f"Role {binding.role} grants excessive permissions"
+                "description": f"Role {binding.role} grants full project control"
             })
-
-        if 'allUsers' in binding.members or 'allAuthenticatedUsers' in binding.members:
+        
+        elif binding.role == "roles/editor":
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
-                "title" : "Overly Permissive GCP IAM Binding",
-                "resource" : binding.role,
-                "cloud_provider": "GCP", 
-                "account_id": self.project_id,  
+                "severity": Severity.HIGH.value,
+                "title": "Overly Permissive GCP IAM Binding - Editor",
+                "resource": binding.role,
+                "cloud_provider": "GCP",
+                "account_id": self.project_id,
                 "account_name": self.account_name,
-                "description" : "Role allows public access"
+                "description": f"Role {binding.role} grants broad resource modification permissions but not IAM control"
+            })
+        
+        if 'allUsers' in binding.members:
+            self.findings.append({
+                "severity": Severity.CRITICAL.value,
+                "title": "Public GCP IAM Binding - Internet Access",
+                "resource": binding.role,
+                "cloud_provider": "GCP",
+                "account_id": self.project_id,
+                "account_name": self.account_name,
+                "description": f"Role {binding.role} is assumable by anyone on the internet (allUsers)"
+            })
+        
+        elif 'allAuthenticatedUsers' in binding.members:
+            self.findings.append({
+                "severity": Severity.HIGH.value,
+                "title": "Public GCP IAM Binding - Any Google Account",
+                "resource": binding.role,
+                "cloud_provider": "GCP",
+                "account_id": self.project_id,
+                "account_name": self.account_name,
+                "description": f"Role {binding.role} is assumable by any authenticated Google account (allAuthenticatedUsers)"
             })

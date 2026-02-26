@@ -21,7 +21,7 @@ def test_s3_encryption_finding():
         scanner = S3Scanner()
         scanner.check_encryption("fake-bucket")
         assert len(scanner.findings) == 1
-        assert scanner.findings[0]["severity"] == "medium"
+        assert scanner.findings[0]["severity"] == "high"
 
 def test_s3_no_finding_when_secure():
     with patch('scanners.aws.s3_checker.boto3.Session') as mock_session:

@@ -106,7 +106,7 @@ class S3Scanner():
              self.s3_client.get_bucket_encryption(Bucket=bucket_name)
         except:
             self.findings.append({
-                "severity" : Severity.MEDIUM.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "S3 Bucket Encryption Disabled",
                 "resource" : bucket_name,
                 "cloud_provider": "AWS",              

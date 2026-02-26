@@ -23,7 +23,7 @@ class BucketScanner():
     def check_bucket_iam_policy(self, bucket):
         policy = bucket.get_iam_policy()
         for binding in policy.bindings:
-            if 'allUsers'in binding['members'] or 'allAuthenticatedUsers' in binding['members']:
+            if 'allUsers'in binding['members']:
                 self.findings.append({
                     "severity" : Severity.CRITICAL.value,
                     "title" : "Public GCP Storage Bucket",
@@ -32,6 +32,17 @@ class BucketScanner():
                     "account_id": self.project_id,  
                     "account_name": self.account_name,
                     "description" : f"Bucket allows public access via IAM policy"
+                })
+                
+            elif 'allAuthenticatedUsers' in binding['members']:
+                self.findings.append({
+                    "severity": Severity.HIGH.value,
+                    "title": "Public GCP Storage Bucket - Any Google Account Access",
+                    "resource": bucket.name,
+                    "cloud_provider": "GCP",
+                    "account_id": self.project_id,
+                    "account_name": self.account_name,
+                    "description": f"Bucket '{bucket.name}' allows access to any authenticated Google account via IAM policy (allAuthenticatedUsers)"
                 })
 
 

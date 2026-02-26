@@ -21,20 +21,35 @@ class RBACAnalyzer():
         return self.findings
 
     def check_role_assignment(self, assignment):
-        dangerous_roles = [
-            "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
-            "b24988ac-6180-42a0-ab88-20f7382dd24c",
-            "18d7d88d-d35e-4fb5-a5c3-7773c20a72d9"
-        ]
-
-        for role_guid in dangerous_roles:
-            if assignment.role_definition_id.endswith(role_guid):
-                self.findings.append({
-                    "severity" : Severity.CRITICAL.value,
-                    "title" : "Overly Permissive Azure Role Assignment",
-                    "resource" : assignment.principal_id,
-                    "cloud_provider": "Azure",  
-                    "account_id": self.subscription_id,  
-                    "account_name": self.account_name,
-                    "description" : f"Principal has {role_guid} role assigned at scope: {assignment.scope}"
-                })
+        if assignment.role_definition_id.endswith("8e3af657-a8ff-443c-a75c-2fe8c4bcb635"):
+            self.findings.append({
+                "severity": Severity.CRITICAL.value,
+                "title": "Overly Permissive Azure Role Assignment - Owner",
+                "resource": assignment.principal_id,
+                "cloud_provider": "Azure",
+                "account_id": self.subscription_id,
+                "account_name": self.account_name,
+                "description": f"Principal has Owner role assigned at scope: {assignment.scope}"
+            })
+        
+        elif assignment.role_definition_id.endswith("b24988ac-6180-42a0-ab88-20f7382dd24c"):
+            self.findings.append({
+                "severity": Severity.HIGH.value,
+                "title": "Overly Permissive Azure Role Assignment - Contributor",
+                "resource": assignment.principal_id,
+                "cloud_provider": "Azure",
+                "account_id": self.subscription_id,
+                "account_name": self.account_name,
+                "description": f"Principal has Contributor role assigned at scope: {assignment.scope}"
+            })
+        
+        elif assignment.role_definition_id.endswith("18d7d88d-d35e-4fb5-a5c3-7773c20a72d9"):
+            self.findings.append({
+                "severity": Severity.CRITICAL.value,
+                "title": "Overly Permissive Azure Role Assignment - User Access Administrator",
+                "resource": assignment.principal_id,
+                "cloud_provider": "Azure",
+                "account_id": self.subscription_id,
+                "account_name": self.account_name,
+                "description": f"Principal has User Access Administrator role assigned at scope: {assignment.scope}"
+            })

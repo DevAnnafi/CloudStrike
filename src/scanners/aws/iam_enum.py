@@ -11,7 +11,6 @@ class IAMScanner():
         self.sts_client = session.client('sts')
         self.iam_client = session.client('iam')
         
-        # Get account ID
         try:
             identity = self.sts_client.get_caller_identity()
             self.account_id = identity['Account']
@@ -174,7 +173,7 @@ class IAMScanner():
     def check_create_policy(self, permissions):
         if "iam:CreatePolicy" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - CreatePolicy",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -211,7 +210,7 @@ class IAMScanner():
     def check_set_default_policy_version(self,permissions):
         if "iam:SetDefaultPolicyVersion" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - SetDefaultPolicyVersion",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -247,7 +246,7 @@ class IAMScanner():
     def check_passrole_data_pipeline(self, permissions):
         if "iam:PassRole" in permissions and "datapipeline:CreatePipeline" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - PassRole and Datapipeline",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -259,7 +258,7 @@ class IAMScanner():
     def check_passrole_glue(self, permissions):
         if "iam:PassRole" in permissions and "glue:CreateDevEndpoint" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - PassRole + Glue",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -271,7 +270,7 @@ class IAMScanner():
     def check_assume_role(self, permissions):
         if "sts:AssumeRole" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - AssumeRole",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -283,7 +282,7 @@ class IAMScanner():
     def check_lambda_invoke(self, permissions):
         if "lambda:InvokeFunction" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - InvokeFunction",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
@@ -295,7 +294,7 @@ class IAMScanner():
     def check_ec2_run_instances(self, permissions):
         if "ec2:RunInstances" in permissions:
             self.findings.append({
-                "severity" : Severity.CRITICAL.value,
+                "severity" : Severity.HIGH.value,
                 "title" : "IAM Privilege Escalation - RunInstances",
                 "resource" : "Current User",
                 "cloud_provider": "AWS",
