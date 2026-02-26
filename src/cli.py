@@ -7,6 +7,8 @@ from core import CloudProvider, progress_context, ReportGenerator
 from rich.console import Console
 from rich.table import Table
 from core.config import MultiAccountConfig
+from core.drift import DriftDetector
+import json
 
 
 def main():
@@ -25,6 +27,7 @@ def main():
     scan_parser.add_argument('--verbose', action='store_true')
     scan_parser.add_argument('--config', type=str, help='Path to multi-account configuration file')
     scan_parser.add_argument('--environment', type=str, help='Environment to scan (production, staging, etc.)')
+    scan_parser.add_argument('--baseline', type=str, help='Path to baseline report for drift detection')
     args = parser.parse_args()
     if args.command == 'scan':
         run_scan(args)
@@ -128,12 +131,23 @@ def run_multi_account_scan(args, console):
     console.print(table)
 
     cloud_provider = f"{args.environment} (Multi-Account)"
-
     report = ReportGenerator(all_findings, cloud_provider)
-    report.save_json(args.output)
-    print(f"Report saved to {args.output} with {len(all_findings)} findings")
-    
-    return all_findings
+    report_dict = report.to_dict()
+
+    # Add drift if baseline provided
+    if args.baseline:
+        with open(args.baseline, 'r') as f:
+            baseline_report = json.load(f)
+        
+        detector = DriftDetector(baseline_report, report_dict)
+        drift = detector.detect_drift()
+        report_dict['drift'] = drift
+
+    # Save report with drift included
+    with open(args.output, 'w') as f:
+        json.dump(report_dict, f, indent=4)
+
+    console.print(f"Report saved to {args.output} with {len(all_findings)} findings")
 
 def run_scan(args):
     try:
