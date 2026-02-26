@@ -366,19 +366,6 @@ Current coverage: **40%** with **23 passing tests**
 
 ---
 
-## Roadmap
-
-- [ ] HTML/PDF report generation
-- [ ] Slack/Email notifications
-- [ ] Custom check framework
-- [ ] Remediation automation
-- [ ] Compliance frameworks (CIS, NIST, SOC2)
-- [ ] Web dashboard
-- [ ] API endpoint scanning
-- [ ] Container security checks
-
----
-
 ## Contributing
 
 Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
