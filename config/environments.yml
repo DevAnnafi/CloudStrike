@@ -2,9 +2,11 @@ production:
   aws:
     - profile: default
       name: "Production AWS Account"
+  
   azure:
     - subscription_id: "abc-123-def"
       name: "Production Subscription"
+  
   gcp:
     - project_id: "prod-gcp-project"
       name: "Production GCP"

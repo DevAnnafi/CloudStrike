@@ -1,0 +1,28 @@
+production:
+  aws:
+    - profile: prod-account-1       
+      name: "Production Main"       
+    - profile: prod-account-2
+      name: "Production DR"
+  
+  azure:
+    - subscription_id: "00000000-0000-0000-0000-000000000000"  
+      name: "Production Subscription"
+  
+  gcp:
+    - project_id: "my-prod-project" 
+      name: "Production GCP"
+
+staging:
+  aws:
+    - profile: staging-aws
+      name: "Staging Account"
+  
+  azure:
+    - subscription_id: "11111111-1111-1111-1111-111111111111"
+      name: "Staging Subscription"
+
+development:
+  aws:
+    - profile: dev-aws
+      name: "Development Account"

@@ -41,15 +41,12 @@
 
 ## Installation
 ```bash
-# Clone the repository
 git clone https://github.com/DevAnnafi/CloudSecure.git
 cd CloudSecure
 
-# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -125,28 +122,14 @@ Report saved to report.json with 3 findings
 
 CloudSecure v2 supports scanning multiple AWS accounts, Azure subscriptions, and GCP projects from a single configuration file.
 
-### Setup
+### Setup Configuration
 
-1. **Create a configuration file** (`config/environments.yml`):
-```yaml
-production:
-  aws:
-    - profile: prod-account-1
-      name: "Production Main"
-    - profile: prod-account-2
-      name: "Production DR"
-  azure:
-    - subscription_id: "abc-123-def-456"
-      name: "Production Subscription"
-  gcp:
-    - project_id: "my-prod-project"
-      name: "Production GCP"
-
-staging:
-  aws:
-    - profile: staging
-      name: "Staging Account"
+1. Use the environments_example.yml
+```bash
+cp config/environments_example.yml config/environments.yml
 ```
+
+2. Edit `config/environments.yml` with your actual account details
 
 2. **Configure cloud credentials**:
 
@@ -221,10 +204,10 @@ Options:
 
 ## Running Tests
 ```bash
-# Run unit tests
+
 pytest tests/unit/ -v
 
-# Run with coverage
+
 pytest tests/unit/ --cov=src --cov-report=html
 ```
 

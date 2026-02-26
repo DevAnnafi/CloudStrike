@@ -16,6 +16,11 @@ class ReportGenerator:
         }, 
         "summary" : self.get_summary(),
 
+        "posture": { 
+            "overall_score": self.get_posture_score(),
+            "cloud_breakdown": self.get_cloud_breakdown()
+        },
+
         "findings" : self.findings
     }
 
@@ -32,7 +37,52 @@ class ReportGenerator:
             "medium" : medium,
             "low" : low
         }
+    
+    def get_posture_score(self):
+        score = 100
 
+        for finding in self.findings:
+            severity = finding["severity"]
+            if severity == 'critical':
+                score -= 10
+            elif severity == 'high':
+                score -= 5
+            elif severity == 'medium':
+                score -= 2
+            elif severity == 'low':
+                score -= 1
+
+        return max(0, score)
+    
+    def get_cloud_breakdown(self):
+        breakdown = {}
+        for finding in self.findings:
+            cloud_provider = finding['cloud_provider']
+            if cloud_provider not in breakdown:
+                breakdown[cloud_provider] = {
+                    "findings_count" : 0,
+                    "critical" : 0,
+                    "high" : 0,
+                    "medium" : 0,
+                    "low" : 0,
+                    "score" : 100
+                }
+            
+            breakdown[cloud_provider]["findings_count"] += 1
+
+            severity = finding['severity']
+            breakdown[cloud_provider][severity] += 1
+
+        for cloud in breakdown:
+            critical = breakdown[cloud]["critical"]
+            high = breakdown[cloud]["high"]
+            medium = breakdown[cloud]["medium"]
+            low = breakdown[cloud]["low"]
+            
+            score = 100 - (critical * 10) - (high * 5) - (medium * 2) - (low * 1)
+            breakdown[cloud]["score"] = max(0, score)
+
+        return breakdown
 
     def save_json(self, output):
         with open(output, 'w') as f:
