@@ -1,4 +1,4 @@
-# CloudSecure v2.0 🛡️
+# CloudSecure v2.0 
 
 **Enterprise-grade multi-cloud security scanner with posture telemetry and drift detection**
 
