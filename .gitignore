@@ -10,6 +10,13 @@ dist/
 .installed.cfg
 *.egg
 
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+cloudsecure.db
+
 # Virtual Environment
 venv/
 ENV/

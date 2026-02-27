@@ -12,7 +12,7 @@ Price
   │
   │  CloudSecure
   │  ($99-499/month)
-  │  ├─ Security credit score ⭐
+  │  ├─ Security credit score
   │  ├─ Multi-account aggregation
   │  ├─ Drift detection
   │  └─ Self-serve SaaS
